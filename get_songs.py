@@ -124,7 +124,6 @@ def main( filename ):
     out = open( "id_file.csv", "w" )
     csv_reader = csv.reader( fn )
     out.write( "track_name,unique_id,game,danceability,energy,key,loudness,mode,speechiness,acousticness,instrumentalness,liveness,valence,tempo,avg_bar_len,avg_beat_len,avg_tatum_len,song_len\n" )
-    out.write( "string,string,enum,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric")
     next( csv_reader )
 
     # call authorize to enable API calls and increased rate
