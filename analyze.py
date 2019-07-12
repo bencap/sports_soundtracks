@@ -45,6 +45,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import classification_report
@@ -187,6 +188,7 @@ def train_model( X_train, X_test, y_train, y_test, model_type ):
     if model_type == "rfc": model = RandomForestClassifier( n_estimators = 100 )
     if model_type == "xgb": model = XGBClassifier()
     if model_type == "logit": model = LogisticRegression( solver="lbfgs", multi_class="auto")
+    if model_type == "knn": model = KNeighborsClassifier( n_neighbors = 4, weights = 'distance' )
     model.fit( X_train, y_train.values.ravel() )
     y_pred = model.predict( X_test )
 
@@ -209,22 +211,34 @@ def conf_mat( y_test, y_pred, p=True ):
     if p: print( cm, end = "\n\n" )
     return cm
 
-def accuracy( cf_mat, p=True ):
+def accuracy( cf_mat, labels, p=True ):
     """ returns the accuracy of a given model
 
     :param cf_mat: A confusion matrix generated for the data
     :type cf_mat: Array like
+    :param labels: The model class labels
+    :type labels: Pandas DataFrame
     :param print: Whether to print the accuracy or not
     :type print: Boolean
     """
     
     # the accuracy is the diagonals of the confusion matrix
-    numerator = np.trace( cf_mat )
-    denominator = np.sum( cf_mat )
+    diagonals = np.diagonal( cf_mat )
+    correct_class = np.trace( cf_mat )
+    total_sum = np.sum( cf_mat )
+    row_sum = np.sum( cf_mat, axis=1 )
+    col_sum = np.sum( cf_mat, axis=0 )
 
-    acc = ( numerator/denominator ) * 100
-    if p: print( "Accuracy : ",round( acc, 2 ), " %"  )
-    
+    acc = ( correct_class/total_sum ) * 100
+    if p: 
+        print( "Overall Prediction Accuracy : ",round( acc, 2 ), " %"  )
+        print()
+        for i in enumerate( row_sum ):
+            print( "Class ", labels['game'].iloc[i[0]]," Precision: ", round( diagonals[i[0]]/i[1] * 100, 2 ), " %" )
+        print()
+        for i in enumerate( col_sum ):  
+            print( "Class ", labels['game'].iloc[i[0]]," Recall: ", round( diagonals[i[0]]/i[1] * 100, 2 ), " %" )
+        print()
     return acc
 
 def cross_validate( estimator, features, labels, splits=4, p=True ):
@@ -280,7 +294,7 @@ def execute_workflow( df, id_cols, cat_col, model_type, pca=False ):
 
     # model results
     cm = conf_mat( y_test, y_pred )
-    accuracy( cm )
+    accuracy( cm, labels.drop_duplicates() )
     cross_validate( model, features, labels )
     print()
 
@@ -449,6 +463,14 @@ def main( filepath ):
     if choice == "yp":
         print()
         execute_workflow( df, id_cols, cat_col, "logit", pca=True )
+
+    choice = input( "execute K Nearest Neighbor train/test workflow and display results? (y/yp/n): ")
+    if choice == "y":
+        print()
+        execute_workflow( df, id_cols, cat_col, "knn" )
+    if choice == "yp":
+        print()
+        execute_workflow( df, id_cols, cat_col, "knn", pca=True )
 
     choice = input( "execute TensorFlow train/test workflow and display results? (y/yp/n): ")
     if choice == "y":
